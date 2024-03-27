@@ -2,6 +2,7 @@
 
 const db = require("../db");
 const { BadRequestError, NotFoundError } = require("../expressError");
+const { filterCompanies } = require("../helpers/filter");
 const { sqlForPartialUpdate } = require("../helpers/sql");
 
 /** Related functions for companies. */
@@ -61,7 +62,14 @@ class Company {
   //num_employee > minEmployees && num_employee < maxEmployees
   //{nameLike : name , minEmployees: num_employees, maxEmployees: num_employees}
 
-  static async findAll(filterKeys = {}) {
+  static async findAll(filterObj = {}) {
+    const {setCols, values} = filterCompanies(
+      filterObj,
+      {
+        nameLike: "name ILIKE",
+        minEmployees: "num_employees >",
+        maxEmployees: "num_employees <",
+      })
     const companiesRes = await db.query(`
         SELECT handle,
                name,
@@ -69,7 +77,8 @@ class Company {
                num_employees AS "numEmployees",
                logo_url      AS "logoUrl"
         FROM companies
-        ORDER BY name`);
+        WHERE ${setCols}
+        ORDER BY name`, values);
     return companiesRes.rows;
   }
 
