@@ -55,7 +55,13 @@ class Company {
    * Returns [{ handle, name, description, numEmployees, logoUrl }, ...]
    * */
 
-  static async findAll() {
+  //{nameLike: 'sam', minEmployees: 100, maxEmployees: 500}
+
+  //WHERE name ILIKE %nameLike%
+  //num_employee > minEmployees && num_employee < maxEmployees
+  //{nameLike : name , minEmployees: num_employees, maxEmployees: num_employees}
+
+  static async findAll(filterKeys = {}) {
     const companiesRes = await db.query(`
         SELECT handle,
                name,
