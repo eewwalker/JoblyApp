@@ -54,12 +54,13 @@ function ensureAdmin(req, res, next) {
  *
  * If not, raises Unauthorized.
  */
-//TODO: Anytime you use the same variable multiple times just create a variable
+
 function ensureCorrectUserOrAdmin(req, res, next) {
+  const currentUser = res.locals.user?.username;
   if (
-    res.locals.user?.username && (res.locals.user?.username === req.params.username
-    || res.locals.user?.isAdmin === true))
-  return next();
+    currentUser && (currentUser === req.params.username
+      || res.locals.user?.isAdmin === true))
+    return next();
   throw new UnauthorizedError();
 }
 
