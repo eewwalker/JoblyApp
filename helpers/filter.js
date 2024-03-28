@@ -2,57 +2,47 @@
 
 const { BadRequestError } = require("../expressError");
 
-// WHERE name ILIKE $1 AND num_employees > $2 AND num_employees < $3
-
-// WHERE num_employees > $1 AND num_employees < $2
-
-// {name: "sam", min: 10, max: 100} => [nameLike, min, max]
+/** Given parameters of an object with filtering criteria and an object to map
+ * JS keys to query statements, generates SQL query components to filter
+ * companies in the database.
+ *
+ * Receives optional filtering criteria:
+ *  {nameLike: , minEmployees: , maxEmployees} =>
+ *
+ *  {
+      setCols: 'name ILIKE $1 AND num_employees > $2 AND num_employees < $3',
+      values: ["%and%", 20, 500]
+    }
+*/
 function filterCompanies(filterObj, jsToSql) {
   const keys = Object.keys(filterObj);
-  if (filterObj.minEmployees > filterObj.maxEmployees){
+
+  if (filterObj.minEmployees > filterObj.maxEmployees) {
     throw new BadRequestError("Incorrect input");
   }
 
-// ['name ILIKE $1', 'num_employees > $2', 'num_employees < $3']
   const cols = keys.map((colName, idx) =>
-  `${jsToSql[colName] || colName} $${idx + 1}`,
+    `${jsToSql[colName] || colName} $${idx + 1}`,
   );
 
 
   const values = Object.values(filterObj).map(val => {
-    if (isNaN(parseInt(val))){
+    if (filterObj.nameLike === val) {
+
       return `%${val}%`;
     }
-    return val;
-  })
 
-  console.log("#################", values);
+    return val;
+  });
 
 
   return {
     setCols: cols.length ?
-    cols.join(' AND ') : true,
+      cols.join(' AND ') : true,
     values: values
   };
 
 }
-
-  // if (filterObj.nameLike !== undefined) {
-  //   cols.push('name ILIKE $');
-  //   values.push(`%${filterObj.nameLike}%`);
-  // }
-  // if (filterObj.minEmployees !== undefined) {
-  //   cols.push('num_employees > $');
-  //   values.push(parseInt(filterObj.minEmployees));
-  // }
-  // if (filterObj.maxEmployees !== undefined) {
-  //   cols.push('num_employees < $');
-  //   values.push(parseInt(filterObj.maxEmployees));
-  // }
-
-
-
-
 
 
 
