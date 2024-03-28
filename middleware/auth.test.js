@@ -16,6 +16,7 @@ function next(err) {
   if (err) throw new Error("Got error from middleware");
 }
 
+//TODO: Pattern match our new middleware function
 
 describe("authenticateJWT", function () {
   test("works: via header", function () {

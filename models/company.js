@@ -9,13 +9,11 @@ const { sqlForPartialUpdate } = require("../helpers/sql");
 
 class Company {
 
-  /** Given parameters of an object with filtering criteria and an object to map
-   * JS keys to query statements, generates SQL query components to filter
-   * companies in the database.
+  /** Given parameters of an object with filtering criteria, generates SQL query
+   *  WHERE clause to filter companies in the database.
    *
    * Receives optional filtering criteria:
    *  {nameLike: , minEmployees: , maxEmployees} =>
-   *
    *  {
         setCols: 'name ILIKE $1 AND num_employees > $2 AND num_employees < $3',
         values: ["%and%", 20, 500]
@@ -25,18 +23,17 @@ class Company {
     const cols = [];
     const values = [];
 
-    if (nameLike) {
+    if (nameLike !== undefined) {
       values.push(`%${nameLike}%`);
       cols.push(`name ILIKE $${values.length}`);
-
     }
 
-    if (minEmployees) {
+    if (minEmployees !== undefined) {
       values.push(minEmployees);
       cols.push(`num_employees > $${values.length}`);
     }
 
-    if (maxEmployees) {
+    if (maxEmployees !== undefined) {
       values.push(maxEmployees);
       cols.push(`num_employees < $${values.length}`);
     }
@@ -50,9 +47,6 @@ class Company {
     };
 
   }
-
-
-
 
 
   /** Create a company (from data), update db, return new company data.
@@ -113,7 +107,7 @@ class Company {
     if (filterObj.minEmployees > filterObj.maxEmployees) {
       throw new BadRequestError("Minimum employees can not be greater than maximum employees");
     }
-    const { setCols, values } = Company._whereBuilder(filterObj);
+    const { setCols, values } = this._whereBuilder(filterObj);
 
     const companiesRes = await db.query(`
         SELECT handle,

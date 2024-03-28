@@ -40,8 +40,33 @@ function ensureLoggedIn(req, res, next) {
   throw new UnauthorizedError();
 }
 
+/** Middleware to use when they must be logged in and an admin.
+ *
+ * If not, raises Unauthorized.
+ */
+
+function ensureAdmin(req, res, next) {
+  if (res.locals.user?.username && res.locals.user?.isAdmin === true) return next();
+  throw new UnauthorizedError();
+}
+
+/** Middleware to use when they must be logged in and current user or an admin.
+ *
+ * If not, raises Unauthorized.
+ */
+//TODO: Anytime you use the same variable multiple times just create a variable
+function ensureCorrectUserOrAdmin(req, res, next) {
+  if (
+    res.locals.user?.username && (res.locals.user?.username === req.params.username
+    || res.locals.user?.isAdmin === true))
+  return next();
+  throw new UnauthorizedError();
+}
+
 
 module.exports = {
   authenticateJWT,
   ensureLoggedIn,
+  ensureAdmin,
+  ensureCorrectUserOrAdmin,
 };
