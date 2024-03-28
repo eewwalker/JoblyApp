@@ -15,6 +15,31 @@ beforeEach(commonBeforeEach);
 afterEach(commonAfterEach);
 afterAll(commonAfterAll);
 
+/************************************** _whereBuilder */
+
+describe("whereBuilder", function () {
+  test("works", function () {
+    let statement = Company._whereBuilder({
+      nameLike: 'c',
+      minEmployees: '0',
+      maxEmployees: '4'
+    });
+    expect(statement.setCols).toEqual(
+      `WHERE name ILIKE $1 AND num_employees > $2 AND num_employees < $3`
+    );
+  });
+
+  test("fails", function () {
+    let statement = Company._whereBuilder({});
+    expect(statement.setCols).toEqual('');
+  });
+
+});
+
+
+
+
+
 /************************************** create */
 
 describe("create", function () {
@@ -86,7 +111,7 @@ describe("findAll", function () {
     ]);
   });
 
-  test("works: when filtering name", async function () {
+  test("works: when filtering nameLike", async function () {
     let companies = await Company.findAll({
       nameLike: '1'
     });
@@ -165,16 +190,15 @@ describe("findAll", function () {
     ]);
   });
 
+  test("fails: when minEmployees > maxEmployees", async function () {
+    try {
+      await Company.findAll({ minEmployees: 300, maxEmployees: 100 });
+      throw new Error();
+    } catch (err) {
+      expect(err instanceof BadRequestError).toBeTruthy();
+    }
 
-  // test("fails: when filtering by invalid filter", async function () {
-  //   try {
-  //     await Company.findAll({ isAdmin: true });
-  //     throw new Error();
-  //   } catch (err) {
-  //     expect(err instanceof BadRequestError).toBeTruthy();
-  //   }
-
-  // });
+  });
 
 });
 

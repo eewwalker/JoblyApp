@@ -2,12 +2,59 @@
 
 const db = require("../db");
 const { BadRequestError, NotFoundError } = require("../expressError");
-const { filterCompanies } = require("../helpers/filter");
 const { sqlForPartialUpdate } = require("../helpers/sql");
 
 /** Related functions for companies. */
 
+
 class Company {
+
+  /** Given parameters of an object with filtering criteria and an object to map
+   * JS keys to query statements, generates SQL query components to filter
+   * companies in the database.
+   *
+   * Receives optional filtering criteria:
+   *  {nameLike: , minEmployees: , maxEmployees} =>
+   *
+   *  {
+        setCols: 'name ILIKE $1 AND num_employees > $2 AND num_employees < $3',
+        values: ["%and%", 20, 500]
+      }
+  */
+  static _whereBuilder({ nameLike, minEmployees, maxEmployees }) {
+    const cols = [];
+    const values = [];
+
+    if (nameLike) {
+      values.push(`%${nameLike}%`);
+      cols.push(`name ILIKE $${values.length}`);
+
+    }
+
+    if (minEmployees) {
+      values.push(minEmployees);
+      cols.push(`num_employees > $${values.length}`);
+    }
+
+    if (maxEmployees) {
+      values.push(maxEmployees);
+      cols.push(`num_employees < $${values.length}`);
+    }
+
+    const where = cols.length ?
+      `WHERE ${cols.join(' AND ')}` : '';
+
+    return {
+      setCols: where,
+      values
+    };
+
+  }
+
+
+
+
+
   /** Create a company (from data), update db, return new company data.
    *
    * data should be { handle, name, description, numEmployees, logoUrl }
@@ -39,12 +86,12 @@ class Company {
                     description,
                     num_employees AS "numEmployees",
                     logo_url AS "logoUrl"`, [
-          handle,
-          name,
-          description,
-          numEmployees,
-          logoUrl,
-        ],
+      handle,
+      name,
+      description,
+      numEmployees,
+      logoUrl,
+    ],
     );
     const company = result.rows[0];
 
@@ -63,13 +110,11 @@ class Company {
   //{nameLike : name , minEmployees: num_employees, maxEmployees: num_employees}
 
   static async findAll(filterObj = {}) {
-    const {setCols, values} = filterCompanies(
-      filterObj,
-      {
-        nameLike: "name ILIKE",
-        minEmployees: "num_employees >",
-        maxEmployees: "num_employees <",
-      })
+    if (filterObj.minEmployees > filterObj.maxEmployees) {
+      throw new BadRequestError("Minimum employees can not be greater than maximum employees");
+    }
+    const { setCols, values } = Company._whereBuilder(filterObj);
+
     const companiesRes = await db.query(`
         SELECT handle,
                name,
@@ -77,7 +122,7 @@ class Company {
                num_employees AS "numEmployees",
                logo_url      AS "logoUrl"
         FROM companies
-        WHERE ${setCols}
+        ${setCols}
         ORDER BY name`, values);
     return companiesRes.rows;
   }
@@ -121,11 +166,11 @@ class Company {
 
   static async update(handle, data) {
     const { setCols, values } = sqlForPartialUpdate(
-        data,
-        {
-          numEmployees: "num_employees",
-          logoUrl: "logo_url",
-        });
+      data,
+      {
+        numEmployees: "num_employees",
+        logoUrl: "logo_url",
+      });
     const handleVarIdx = "$" + (values.length + 1);
 
     const querySql = `

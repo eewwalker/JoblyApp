@@ -70,15 +70,8 @@ router.get("/", async function (req, res, next) {
     throw new BadRequestError(errs);
   }
 
-  let companies;
+  const companies = await Company.findAll(data);
 
-  if (data) {
-    companies = await Company.findAll(data);
-
-  } else {
-    companies = await Company.findAll();
-
-  }
   return res.json({ companies });
 });
 
