@@ -8,7 +8,11 @@ const { sqlForPartialUpdate } = require("../helpers/sql");
 
 class Job {
 
-  /** Find all jobs  */
+  /** Find all companies.
+   *
+   * Returns [{ title, salary, equity, company_handle }, ...]
+   * */
+
   static async findAll() {
     const results = await db.query(`
   SELECT title, salary, equity, company_handle
@@ -83,12 +87,55 @@ class Job {
     return job;
   };
 
+  /** Update job data with `data`.
+   *
+   * This is a "partial update" --- it's fine if data doesn't contain all the
+   * fields; this only changes provided ones.
+   *
+   * Data can include: {title, salary, equity}
+   *
+   * Returns {title, salary, equity, company_handle}
+   *
+   * Throws NotFoundError if not found.
+   */
 
+  static async update(title, data) {
+    const { setCols, values } = sqlForPartialUpdate(
+      data, {});
+    const titleVarIdx = "$" + (values.length + 1);
+
+    const querySql = `
+        UPDATE jobs
+        SET ${setCols}
+        WHERE title = ${titleVarIdx}
+        RETURNING
+            title,
+            salary,
+            equity,
+            company_handle`;
+    const result = await db.query(querySql, [...values, title]);
+    const job = result.rows[0];
+
+    if (!job) throw new NotFoundError(`No job: ${title}`);
+
+    return job;
+  }
+
+  /** Delete given job from database; returns undefined.
+   *
+   * Throws NotFoundError if job not found.
+   **/
+
+  static async remove(title) {
+    const result = await db.query(`
+        DELETE
+        FROM jobs
+        WHERE title = $1
+        RETURNING title`, [title]);
+    const company = result.rows[0];
+
+    if (!company) throw new NotFoundError(`No company: ${title}`);
+  }
 }
-
-
-
-
-
 
 module.exports = Job;;
