@@ -5,14 +5,15 @@
 const jsonschema = require("jsonschema");
 
 const express = require("express");
-// How to format multiple lines
-const { ensureLoggedIn, ensureAdmin, ensureCorrectUserOrAdmin } =
+
+const { ensureAdmin, ensureCorrectUserOrAdmin } =
   require("../middleware/auth");
 const { BadRequestError } = require("../expressError");
 const User = require("../models/user");
 const { createToken } = require("../helpers/tokens");
 const userNewSchema = require("../schemas/userNew.json");
 const userUpdateSchema = require("../schemas/userUpdate.json");
+const userApplySchema = require("../schemas/userApply.json");
 
 const router = express.Router();
 
@@ -45,10 +46,26 @@ router.post("/", ensureAdmin, async function (req, res, next) {
   return res.status(201).json({ user, token });
 });
 
-
+/** POST //:username/jobs/:id => { applied: job_id }
+ * Receives username and jobId
+ *
+ * Returns { applied: job_id }
+ *
+ * Authorization required: currentUser or Admin
+ */
 router.post("/:username/jobs/:id ", ensureCorrectUserOrAdmin,
-  //TODO: validate info
   async function (req, res, next) {
+    const validator = jsonschema.validate(
+      req.params,
+      userApplySchema,
+      { required: true }
+    );
+
+    if (!validator.valid) {
+      const errs = validator.errors.map(e => e.stack);
+      throw new BadRequestError(errs);
+    }
+
     const { username, id } = req.params;
     const { job_id } = await User.apply(username, id);
 
